@@ -1,0 +1,683 @@
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://mefdalvazwtjpesqvxwk.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lZmRhbHZhend0anBlc3F2eHdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MDk4NTUsImV4cCI6MjEwNjk4NTg1NX0.AiFQi-6-fRipN4TP7uxf1u2Fy44ykNSWY1Ezl3rdibc',
+  );
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Gestão de Coroinhas',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF5B3E96),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+      ),
+      home: const TelaNavegacaoPrincipal(),
+    );
+  }
+}
+
+// --- NAVEGAÇÃO PRINCIPAL ---
+class TelaNavegacaoPrincipal extends StatefulWidget {
+  const TelaNavegacaoPrincipal({super.key});
+
+  @override
+  State<TelaNavegacaoPrincipal> createState() => _TelaNavegacaoPrincipalState();
+}
+
+class _TelaNavegacaoPrincipalState extends State<TelaNavegacaoPrincipal> {
+  int _abaSelecionada = 0;
+
+  final List<Widget> _telas = const [
+    TelaHome(),
+    TelaGerarEscala(),
+    TelaMembros(),
+    TelaFrequencia(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _abaSelecionada,
+        children: _telas,
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _abaSelecionada,
+        onDestinationSelected: (index) {
+          setState(() {
+            _abaSelecionada = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Início',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.auto_awesome_outlined),
+            selectedIcon: Icon(Icons.auto_awesome),
+            label: 'Escalas',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people),
+            label: 'Coroinhas',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.analytics_outlined),
+            selectedIcon: Icon(Icons.analytics),
+            label: 'Frequência',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// TELA 1: HOME / DASHBOARD
+// ==========================================
+class TelaHome extends StatelessWidget {
+  const TelaHome({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Comunidade São João Batista'),
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Card(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 24,
+                      child: Icon(Icons.person),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Painel da Coordenação',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const Text('Gestão inteligente de escalas'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Resumo Geral',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildCardStat(
+                    context,
+                    titulo: 'Membros',
+                    valor: '150',
+                    icone: Icons.groups,
+                    cor: Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildCardStat(
+                    context,
+                    titulo: 'Missas Mês',
+                    valor: '32',
+                    icone: Icons.church,
+                    cor: Colors.purple,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Próxima Celebração',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.event, color: Colors.deepPurple),
+                title: const Text('Missa Diária - 19:00'),
+                subtitle: const Text('Segunda-feira • Matriz São João Batista'),
+                trailing: const Chip(
+                  label: Text('4 Escalados'),
+                  backgroundColor: Color(0xFFE8DEF8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardStat(
+    BuildContext context, {
+    required String titulo,
+    required String valor,
+    required IconData icone,
+    required Color cor,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Icon(icone, color: cor, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              valor,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              titulo,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// TELA 2: GERADOR DE ESCALAS (PERSISTENTE NO SUPABASE)
+// ==========================================
+class TelaGerarEscala extends StatefulWidget {
+  const TelaGerarEscala({super.key});
+
+  @override
+  State<TelaGerarEscala> createState() => _TelaGerarEscalaState();
+}
+
+class _TelaGerarEscalaState extends State<TelaGerarEscala> {
+  bool _carregando = false;
+  List<Map<String, dynamic>> _escalaSemanal = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarEscalaDoBanco();
+  }
+
+  // 1. Busca a escala já salva no Supabase
+  Future<void> _carregarEscalaDoBanco() async {
+    setState(() => _carregando = true);
+    try {
+      final response = await Supabase.instance.client
+          .from('escalas')
+          .select()
+          .order('criado_em', ascending: true);
+
+      if (response.isNotEmpty) {
+        setState(() {
+          _escalaSemanal = List<Map<String, dynamic>>.from(response.map((e) => {
+                'titulo': e['titulo'],
+                'data': e['data_missa'],
+                'membros': e['membros'],
+              }));
+        });
+      }
+    } catch (e) {
+      debugPrint('Erro ao carregar escala existente: $e');
+    } finally {
+      setState(() => _carregando = false);
+    }
+  }
+
+  // 2. Gera uma nova escala e salva no Supabase
+  Future<void> _gerarEsalvarEscalaInteligente() async {
+    setState(() => _carregando = true);
+
+    try {
+      final response = await Supabase.instance.client
+          .from('coroinhas')
+          .select('id, nome_completo, cargo, nivel_experiencia')
+          .eq('ativo', true);
+
+      final List<Map<String, dynamic>> coroinhas =
+          List<Map<String, dynamic>>.from(response);
+
+      if (coroinhas.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Nenhum coroinha ativo encontrado.')),
+          );
+        }
+        return;
+      }
+
+      List<Map<String, dynamic>> veteranos =
+          coroinhas.where((c) => c['nivel_experiencia'] == 'VETERANO').toList();
+      List<Map<String, dynamic>> intermediarios = coroinhas
+          .where((c) => c['nivel_experiencia'] == 'INTERMEDIARIO')
+          .toList();
+      List<Map<String, dynamic>> novatos =
+          coroinhas.where((c) => c['nivel_experiencia'] == 'NOVATO').toList();
+
+      veteranos.shuffle(Random());
+      intermediarios.shuffle(Random());
+      novatos.shuffle(Random());
+
+      Map<String, dynamic> puxarMembro(
+          List<Map<String, dynamic>> preferencia, String funcao, int corHex) {
+        Map<String, dynamic> escolhido;
+        if (preferencia.isNotEmpty) {
+          escolhido = preferencia.removeLast();
+        } else if (veteranos.isNotEmpty) {
+          escolhido = veteranos.removeLast();
+        } else if (intermediarios.isNotEmpty) {
+          escolhido = intermediarios.removeLast();
+        } else {
+          escolhido = novatos.removeLast();
+        }
+
+        return {
+          'nome': escolhido['nome_completo'],
+          'funcao': funcao,
+          'nivel': escolhido['nivel_experiencia'],
+          'cor': corHex,
+        };
+      }
+
+      List<Map<String, dynamic>> novaEscala = [];
+
+      // Missas da semana
+      final diasSemana = [
+        'Segunda-feira',
+        'Terça-feira',
+        'Quarta-feira',
+        'Quinta-feira',
+        'Sexta-feira'
+      ];
+
+      for (var dia in diasSemana) {
+        final membrosSemana = [
+          puxarMembro(veteranos, 'Cerimoniário / Líder', Colors.green.value),
+          puxarMembro(intermediarios, 'Librífero (Missal)', Colors.blue.value),
+          puxarMembro(intermediarios, 'Cruciferário (Cruz)', Colors.blue.value),
+          puxarMembro(novatos, 'Cérifero (Vela)', Colors.orange.value),
+        ];
+
+        novaEscala.add({
+          'titulo': 'Missa Diária - 19:00',
+          'data': '$dia • Matriz São João Batista',
+          'membros': membrosSemana,
+        });
+      }
+
+      // Missas do Domingo
+      final horariosDomingo = ['07:30', '10:00', '19:00'];
+      for (int i = 0; i < horariosDomingo.length; i++) {
+        final hora = horariosDomingo[i];
+        final membrosDomingo = [
+          puxarMembro(veteranos, 'Cerimoniário (Líder)', Colors.green.value),
+          puxarMembro(veteranos, 'Turiferário (Incenso)', Colors.green.value),
+          puxarMembro(intermediarios, 'Librífero (Missal)', Colors.blue.value),
+          puxarMembro(intermediarios, 'Cruciferário (Cruz)', Colors.blue.value),
+          puxarMembro(novatos, 'Cérifero 1 (Vela)', Colors.orange.value),
+          puxarMembro(novatos, 'Cérifero 2 (Vela)', Colors.orange.value),
+          puxarMembro(novatos, 'Credência / Ofertas', Colors.orange.value),
+        ];
+
+        novaEscala.add({
+          'titulo': '${i + 1}ª Missa Dominical - $hora',
+          'data': 'Domingo • Matriz São João Batista',
+          'membros': membrosDomingo,
+        });
+      }
+
+      // Limpa a escala anterior no banco e salva a nova
+      await Supabase.instance.client
+          .from('escalas')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      for (var item in novaEscala) {
+        await Supabase.instance.client.from('escalas').insert({
+          'titulo': item['titulo'],
+          'data_missa': item['data'],
+          'membros': item['membros'],
+        });
+      }
+
+      setState(() {
+        _escalaSemanal = novaEscala;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nova escala gerada e salva no Supabase!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar escala: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _carregando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Escalas da Semana'),
+        actions: [
+          if (_escalaSemanal.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Regerar e Salvar',
+              onPressed: _carregando ? null : _gerarEsalvarEscalaInteligente,
+            )
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _carregando ? null : _gerarEsalvarEscalaInteligente,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                ),
+                icon: _carregando
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_awesome),
+                label: Text(
+                  _escalaSemanal.isNotEmpty
+                      ? 'Regerar Nova Escala Semanal'
+                      : 'Gerar Escala Semanal Completa',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _carregando
+                  ? const Center(child: CircularProgressIndicator())
+                  : _escalaSemanal.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Nenhuma escala gerada ainda.\nClique no botão acima para criar a escala semanal.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey, fontSize: 15),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _escalaSemanal.length,
+                          itemBuilder: (context, index) {
+                            final missa = _escalaSemanal[index];
+                            return _buildMissaCard(
+                              titulo: missa['titulo'],
+                              data: missa['data'],
+                              membros: List<Map<String, dynamic>>.from(
+                                  missa['membros']),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMissaCard({
+    required String titulo,
+    required String data,
+    required List<Map<String, dynamic>> membros,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(titulo,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(data,
+                          style: const TextStyle(
+                              color: Colors.grey, fontSize: 13)),
+                    ],
+                  ),
+                ),
+                Chip(
+                  label: Text('${membros.length} Escalados'),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
+                ),
+              ],
+            ),
+            const Divider(),
+            const Text('Equipe e Funções Litúrgicas:',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            ...membros.map((m) => Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                          radius: 5,
+                          backgroundColor:
+                              Color(m['cor'] ?? Colors.blue.value)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(m['nome'],
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            Text('Função: ${m['funcao']} • (${m['nivel']})',
+                                style: TextStyle(
+                                    color: Colors.grey.shade700, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// TELA 3: LISTA DE MEMBROS (SUPABASE)
+// ==========================================
+class TelaMembros extends StatefulWidget {
+  const TelaMembros({super.key});
+
+  @override
+  State<TelaMembros> createState() => _TelaMembrosState();
+}
+
+class _TelaMembrosState extends State<TelaMembros> {
+  final _futureCoroinhas = Supabase.instance.client
+      .from('coroinhas')
+      .select('id, nome_completo, cargo, nivel_experiencia, ativo')
+      .order('nome_completo', ascending: true);
+
+  Color _getCorNivel(String nivel) {
+    switch (nivel) {
+      case 'VETERANO':
+        return Colors.green;
+      case 'INTERMEDIARIO':
+        return Colors.blue;
+      case 'NOVATO':
+      default:
+        return Colors.orange;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Membros Cadastrados'),
+      ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _futureCoroinhas,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Erro ao carregar dados: ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
+          final coroinhas = snapshot.data ?? [];
+
+          if (coroinhas.isEmpty) {
+            return const Center(child: Text('Nenhum coroinha encontrado.'));
+          }
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text(
+                  'Total de membros ativos: ${coroinhas.length}',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: coroinhas.length,
+                  itemBuilder: (context, index) {
+                    final item = coroinhas[index];
+                    final String nivel = item['nivel_experiencia'] ?? 'NOVATO';
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: _getCorNivel(nivel),
+                        radius: 8,
+                      ),
+                      title: Text(item['nome_completo'] ?? ''),
+                      subtitle: Text('Cargo: ${item['cargo']} • Nível: $nivel'),
+                      trailing: const Icon(Icons.chevron_right, size: 18),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ==========================================
+// TELA 4: FREQUÊNCIA
+// ==========================================
+class TelaFrequencia extends StatelessWidget {
+  const TelaFrequencia({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Controle de Frequência')),
+      body: const Center(
+        child: Text('Relatório de Frequência e Presença'),
+      ),
+    );
+  }
+}
